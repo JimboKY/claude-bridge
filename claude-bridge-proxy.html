@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Bridge Proxy - Localhost API Gateway</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .status-bar {
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dc3545;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.connected {
+            background: #28a745;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .api-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        select, input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        textarea {
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .response-area {
+            margin-top: 20px;
+        }
+        
+        .response-box {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .response-box.success {
+            border-left: 4px solid #28a745;
+        }
+        
+        .response-box.error {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .quick-action {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .quick-action:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .quick-action h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 1em;
+        }
+        
+        .quick-action p {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .instructions {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        
+        .instructions h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+        
+        .instructions code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌉 Claude Bridge Proxy</h1>
+            <p>Gateway to Localhost:3000 Bridge Server</p>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Checking connection...</span>
+            </div>
+            <div>
+                <strong>Bridge URL:</strong> <code id="bridgeUrl">http://localhost:3000</code>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="instructions">
+                <h3>📖 How to Use with Claude Web</h3>
+                <p><strong>For Claude:</strong> This interface allows you to interact with the localhost bridge server. The user will execute commands here, and you can read the results.</p>
+                <p><strong>Instructions for Claude:</strong></p>
+                <ol>
+                    <li>Ask the user to open this page: <code>https://YOUR-USERNAME.github.io/YOUR-REPO/claude-bridge-proxy.html</code></li>
+                    <li>Tell the user which API endpoint to call (e.g., "Call /api/status")</li>
+                    <li>User selects the endpoint and clicks "Send Request"</li>
+                    <li>Read the response from the response box below</li>
+                    <li>Provide analysis or next steps based on the response</li>
+                </ol>
+            </div>
+            
+            <div class="section">
+                <h2>🔌 API Request</h2>
+                <div class="api-form">
+                    <div class="form-group">
+                        <label for="method">HTTP Method</label>
+                        <select id="method">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="endpoint">Endpoint</label>
+                        <select id="endpoint">
+                            <option value="/api/status">GET /api/status - Check server status</option>
+                            <option value="/api/notion/user">GET /api/notion/user - Get Notion user</option>
+                            <option value="/api/notion/search">POST /api/notion/search - Search Notion</option>
+                            <option value="/api/obsidian/notes">GET /api/obsidian/notes - List Obsidian notes</option>
+                            <option value="/api/ghl/contacts">GET /api/ghl/contacts - Get GHL contacts</option>
+                            <option value="/api/ghl/tags">GET /api/ghl/tags - Get GHL tags</option>
+                            <option value="/api/sheets/read">GET /api/sheets/read - Read Google Sheet</option>
+                            <option value="/api/filesystem/list">GET /api/filesystem/list - List directory</option>
+                            <option value="custom">Custom endpoint...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="customEndpointGroup" style="display: none;">
+                        <label for="customEndpoint">Custom Endpoint Path</label>
+                        <input type="text" id="customEndpoint" placeholder="/api/notion/search">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="queryParams">Query Parameters (JSON object, optional)</label>
+                        <textarea id="queryParams" placeholder='{"query": "test", "limit": 10}'></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="requestBody">Request Body (JSON, for POST/PUT)</label>
+                        <textarea id="requestBody" placeholder='{"query": "marketing", "page_size": 10}'></textarea>
+                    </div>
+                    
+                    <button id="sendButton" onclick="sendRequest()">
+                        <span id="buttonText">Send Request</span>
+                    </button>
+                </div>
+                
+                <div class="response-area">
+                    <h3>Response</h3>
+                    <div class="response-box" id="responseBox">
+                        <em>No request sent yet. Select an endpoint and click "Send Request" above.</em>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>⚡ Quick Actions</h2>
+                <div class="quick-actions">
+                    <div class="quick-action" onclick="quickAction('status')">
+                        <h3>📊 Server Status</h3>
+                        <p>Check if bridge server is running</p>
+                    </div>
+                    <div class="quick-action" onclick="quickAction('notion-user')">
+                        <h3>👤 Notion User</h3>
+                        <p>Get Notion user information</p>
+                    </div>
+                    <div class="quick-action" onclick="quickAction('obsidian-notes')">
+                        <h3>📝 Obsidian Notes</h3>
+                        <p>List all Obsidian notes</p>
+                    </div>
+                    <div class="quick-action" onclick="quickAction('ghl-contacts')">
+                        <h3>📇 GHL Contacts</h3>
+                        <p>Get GoHighLevel contacts</p>
+                    </div>
+                    <div class="quick-action" onclick="quickAction('ghl-tags')">
+                        <h3>🏷️ GHL Tags</h3>
+                        <p>List all GHL tags</p>
+                    </div>
+                    <div class="quick-action" onclick="quickAction('filesystem-list')">
+                        <h3>📁 List Directory</h3>
+                        <p>List files in a directory</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const BRIDGE_URL = 'http://localhost:3000';
+        
+        // Check connection on load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkConnection();
+            
+            // Handle custom endpoint selection
+            document.getElementById('endpoint').addEventListener('change', (e) => {
+                const customGroup = document.getElementById('customEndpointGroup');
+                if (e.target.value === 'custom') {
+                    customGroup.style.display = 'block';
+                } else {
+                    customGroup.style.display = 'none';
+                }
+            });
+        });
+        
+        async function checkConnection() {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            try {
+                const response = await fetch(`${BRIDGE_URL}/api/status`);
+                if (response.ok) {
+                    statusDot.classList.add('connected');
+                    statusText.textContent = 'Connected to bridge server';
+                } else {
+                    throw new Error('Server responded with error');
+                }
+            } catch (error) {
+                statusDot.classList.remove('connected');
+                statusText.textContent = 'Not connected - Make sure bridge server is running on localhost:3000';
+            }
+        }
+        
+        async function sendRequest() {
+            const method = document.getElementById('method').value;
+            let endpoint = document.getElementById('endpoint').value;
+            const customEndpoint = document.getElementById('customEndpoint').value;
+            const queryParamsText = document.getElementById('queryParams').value.trim();
+            const requestBodyText = document.getElementById('requestBody').value.trim();
+            const responseBox = document.getElementById('responseBox');
+            const sendButton = document.getElementById('sendButton');
+            const buttonText = document.getElementById('buttonText');
+            
+            // Use custom endpoint if selected
+            if (endpoint === 'custom') {
+                endpoint = customEndpoint || '/api/status';
+            }
+            
+            // Build URL with query parameters
+            let url = `${BRIDGE_URL}${endpoint}`;
+            if (queryParamsText) {
+                try {
+                    const params = JSON.parse(queryParamsText);
+                    const queryString = new URLSearchParams(params).toString();
+                    url += `?${queryString}`;
+                } catch (e) {
+                    responseBox.className = 'response-box error';
+                    responseBox.textContent = `Error parsing query parameters: ${e.message}`;
+                    return;
+                }
+            }
+            
+            // Parse request body
+            let body = null;
+            if (requestBodyText && (method === 'POST' || method === 'PUT')) {
+                try {
+                    body = JSON.parse(requestBodyText);
+                } catch (e) {
+                    responseBox.className = 'response-box error';
+                    responseBox.textContent = `Error parsing request body: ${e.message}`;
+                    return;
+                }
+            }
+            
+            // Disable button and show loading
+            sendButton.disabled = true;
+            buttonText.innerHTML = '<span class="loading"></span> Sending...';
+            responseBox.className = 'response-box';
+            responseBox.textContent = 'Sending request...';
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(url, options);
+                const responseText = await response.text();
+                
+                let responseData;
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch (e) {
+                    responseData = responseText;
+                }
+                
+                // Format response
+                const formattedResponse = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    data: responseData
+                };
+                
+                responseBox.className = response.ok ? 'response-box success' : 'response-box error';
+                responseBox.textContent = JSON.stringify(formattedResponse, null, 2);
+                
+                // Update connection status
+                if (response.ok) {
+                    checkConnection();
+                }
+                
+            } catch (error) {
+                responseBox.className = 'response-box error';
+                responseBox.textContent = `Error: ${error.message}\n\nMake sure:\n1. Bridge server is running on localhost:3000\n2. CORS is enabled on the bridge server\n3. You're accessing this page from a browser (not blocked by network policies)`;
+            } finally {
+                sendButton.disabled = false;
+                buttonText.textContent = 'Send Request';
+            }
+        }
+        
+        function quickAction(action) {
+            const methodSelect = document.getElementById('method');
+            const endpointSelect = document.getElementById('endpoint');
+            const requestBody = document.getElementById('requestBody');
+            
+            switch(action) {
+                case 'status':
+                    methodSelect.value = 'GET';
+                    endpointSelect.value = '/api/status';
+                    requestBody.value = '';
+                    sendRequest();
+                    break;
+                    
+                case 'notion-user':
+                    methodSelect.value = 'GET';
+                    endpointSelect.value = '/api/notion/user';
+                    requestBody.value = '';
+                    sendRequest();
+                    break;
+                    
+                case 'obsidian-notes':
+                    methodSelect.value = 'GET';
+                    endpointSelect.value = '/api/obsidian/notes';
+                    requestBody.value = '';
+                    sendRequest();
+                    break;
+                    
+                case 'ghl-contacts':
+                    methodSelect.value = 'GET';
+                    endpointSelect.value = '/api/ghl/contacts';
+                    requestBody.value = '';
+                    sendRequest();
+                    break;
+                    
+                case 'ghl-tags':
+                    methodSelect.value = 'GET';
+                    endpointSelect.value = '/api/ghl/tags';
+                    requestBody.value = '';
+                    sendRequest();
+                    break;
+                    
+                case 'filesystem-list':
+                    methodSelect.value = 'GET';
+                    endpointSelect.value = 'custom';
+                    document.getElementById('customEndpointGroup').style.display = 'block';
+                    document.getElementById('customEndpoint').value = '/api/filesystem/list?path=C:/Users/james/Documents';
+                    requestBody.value = '';
+                    sendRequest();
+                    break;
+            }
+        }
+        
+        // Auto-refresh connection status every 30 seconds
+        setInterval(checkConnection, 30000);
+    </script>
+</body>
+</html>
+
