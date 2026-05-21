@@ -266,7 +266,7 @@
                 <p><strong>For Claude:</strong> This interface allows you to interact with the localhost bridge server. The user will execute commands here, and you can read the results.</p>
                 <p><strong>Instructions for Claude:</strong></p>
                 <ol>
-                    <li>Ask the user to open this page: <code>https://YOUR-USERNAME.github.io/YOUR-REPO/claude-bridge-proxy.html</code></li>
+                    <li>Ask the user to open this page: <code>https://jimboky.github.io/claude-bridge/</code></li>
                     <li>Tell the user which API endpoint to call (e.g., "Call /api/status")</li>
                     <li>User selects the endpoint and clicks "Send Request"</li>
                     <li>Read the response from the response box below</li>
@@ -283,6 +283,7 @@
                             <option value="GET">GET</option>
                             <option value="POST">POST</option>
                             <option value="PUT">PUT</option>
+                            <option value="PATCH">PATCH</option>
                             <option value="DELETE">DELETE</option>
                         </select>
                     </div>
@@ -291,30 +292,29 @@
                         <label for="endpoint">Endpoint</label>
                         <select id="endpoint">
                             <option value="/api/status">GET /api/status - Check server status</option>
-                            <option value="/api/notion/user">GET /api/notion/user - Get Notion user</option>
-                            <option value="/api/notion/search">POST /api/notion/search - Search Notion</option>
                             <option value="/api/obsidian/notes">GET /api/obsidian/notes - List Obsidian notes</option>
-                            <option value="/api/ghl/contacts">GET /api/ghl/contacts - Get GHL contacts</option>
-                            <option value="/api/ghl/tags">GET /api/ghl/tags - Get GHL tags</option>
-                            <option value="/api/sheets/read">GET /api/sheets/read - Read Google Sheet</option>
-                            <option value="/api/filesystem/list">GET /api/filesystem/list - List directory</option>
+                            <option value="/api/obsidian/note">GET /api/obsidian/note - Read a note (needs path param)</option>
+                            <option value="/api/obsidian/search">GET /api/obsidian/search - Search notes (needs q param)</option>
+                            <option value="/api/ghl/contacts">GET /api/ghl/contacts - GoHighLevel contacts</option>
+                            <option value="/api/ghl/conversations/search">GET /api/ghl/conversations/search - GHL conversations</option>
+                            <option value="/api/filesystem/list">GET /api/filesystem/list - List directory (needs path param)</option>
                             <option value="custom">Custom endpoint...</option>
                         </select>
                     </div>
                     
                     <div class="form-group" id="customEndpointGroup" style="display: none;">
                         <label for="customEndpoint">Custom Endpoint Path</label>
-                        <input type="text" id="customEndpoint" placeholder="/api/notion/search">
+                        <input type="text" id="customEndpoint" placeholder="/api/ghl/conversations/search">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="queryParams">Query Parameters (JSON object, optional)</label>
-                        <textarea id="queryParams" placeholder='{"query": "test", "limit": 10}'></textarea>
+                        <textarea id="queryParams" placeholder='{"path": "Daily", "limit": 50}'></textarea>
                     </div>
-                    
+
                     <div class="form-group">
-                        <label for="requestBody">Request Body (JSON, for POST/PUT)</label>
-                        <textarea id="requestBody" placeholder='{"query": "marketing", "page_size": 10}'></textarea>
+                        <label for="requestBody">Request Body (JSON, for POST/PUT/PATCH)</label>
+                        <textarea id="requestBody" placeholder='{"name": "New Contact", "email": "lead@example.com"}'></textarea>
                     </div>
                     
                     <button id="sendButton" onclick="sendRequest()">
@@ -337,21 +337,13 @@
                         <h3>📊 Server Status</h3>
                         <p>Check if bridge server is running</p>
                     </div>
-                    <div class="quick-action" onclick="quickAction('notion-user')">
-                        <h3>👤 Notion User</h3>
-                        <p>Get Notion user information</p>
-                    </div>
                     <div class="quick-action" onclick="quickAction('obsidian-notes')">
                         <h3>📝 Obsidian Notes</h3>
-                        <p>List all Obsidian notes</p>
+                        <p>List recent notes in the vault</p>
                     </div>
                     <div class="quick-action" onclick="quickAction('ghl-contacts')">
                         <h3>📇 GHL Contacts</h3>
                         <p>Get GoHighLevel contacts</p>
-                    </div>
-                    <div class="quick-action" onclick="quickAction('ghl-tags')">
-                        <h3>🏷️ GHL Tags</h3>
-                        <p>List all GHL tags</p>
                     </div>
                     <div class="quick-action" onclick="quickAction('filesystem-list')">
                         <h3>📁 List Directory</h3>
@@ -429,7 +421,7 @@
             
             // Parse request body
             let body = null;
-            if (requestBodyText && (method === 'POST' || method === 'PUT')) {
+            if (requestBodyText && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
                 try {
                     body = JSON.parse(requestBodyText);
                 } catch (e) {
@@ -505,13 +497,6 @@
                     sendRequest();
                     break;
                     
-                case 'notion-user':
-                    methodSelect.value = 'GET';
-                    endpointSelect.value = '/api/notion/user';
-                    requestBody.value = '';
-                    sendRequest();
-                    break;
-                    
                 case 'obsidian-notes':
                     methodSelect.value = 'GET';
                     endpointSelect.value = '/api/obsidian/notes';
@@ -526,18 +511,11 @@
                     sendRequest();
                     break;
                     
-                case 'ghl-tags':
-                    methodSelect.value = 'GET';
-                    endpointSelect.value = '/api/ghl/tags';
-                    requestBody.value = '';
-                    sendRequest();
-                    break;
-                    
                 case 'filesystem-list':
                     methodSelect.value = 'GET';
                     endpointSelect.value = 'custom';
                     document.getElementById('customEndpointGroup').style.display = 'block';
-                    document.getElementById('customEndpoint').value = '/api/filesystem/list?path=C:/Users/james/Documents';
+                    document.getElementById('customEndpoint').value = '/api/filesystem/list?path=/Users/james/Documents';
                     requestBody.value = '';
                     sendRequest();
                     break;
