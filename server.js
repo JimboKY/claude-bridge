@@ -127,12 +127,18 @@ function readBody(req, maxBytes) {
 // escapes the root (blocks ../ traversal and symlink breakouts).
 function resolveSafe(rootReal, rel) {
   const target = path.resolve(rootReal, rel || '.');
+  // Lexical check first: reject ../ escapes before touching the filesystem,
+  // so an escaping path is always 403 whether or not the target exists.
+  if (target !== rootReal && !target.startsWith(rootReal + path.sep)) {
+    throw httpError(403, 'path escapes the allowed root');
+  }
   let rp;
   try {
     rp = fs.realpathSync(target);
   } catch {
     throw httpError(404, 'path not found');
   }
+  // Symlink check: a symlink inside the root may still point outside it.
   if (rp !== rootReal && !rp.startsWith(rootReal + path.sep)) {
     throw httpError(403, 'path escapes the allowed root');
   }

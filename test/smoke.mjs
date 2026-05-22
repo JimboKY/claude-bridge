@@ -99,6 +99,9 @@ try {
   res = await req(`${base1}/api/obsidian/note?path=${encodeURIComponent('../../etc/passwd')}`);
   check('obsidian traversal blocked (403)', res.status === 403);
 
+  res = await req(`${base1}/api/obsidian/note?path=${encodeURIComponent('../../../../../../nope/escape.md')}`);
+  check('obsidian traversal to non-existent path blocked (403)', res.status === 403);
+
   res = await req(`${base1}/api/filesystem/list?path=${encodeURIComponent(vault)}`);
   check('filesystem list within root 200', res.status === 200);
 
