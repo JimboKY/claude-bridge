@@ -1,0 +1,16 @@
+{
+  "name": "claude-bridge",
+  "version": "1.0.0",
+  "description": "Localhost API gateway for Obsidian, GoHighLevel and filesystem access",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:mac": "GHL_API_KEY=\"$(security find-generic-password -s claude-bridge-ghl-key -w)\" node server.js",
+    "test": "node test/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
