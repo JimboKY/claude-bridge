@@ -272,11 +272,17 @@
                     <li>Read the response from the response box below</li>
                     <li>Provide analysis or next steps based on the response</li>
                 </ol>
+                <p style="margin-top:10px"><strong>⚠️ Security:</strong> The bridge server exposes the filesystem and connected accounts. It must require the <strong>API Token</strong> above on every request, restrict CORS to this page's origin only (never <code>*</code>), validate the <code>Host</code> header to block DNS rebinding, allow-list permitted filesystem paths, and bind to <code>127.0.0.1</code>. See <code>SECURITY.md</code>.</p>
             </div>
             
             <div class="section">
                 <h2>🔌 API Request</h2>
                 <div class="api-form">
+                    <div class="form-group">
+                        <label for="apiToken">API Token</label>
+                        <input type="password" id="apiToken" placeholder="Bridge auth token (sent as Authorization: Bearer ...)" autocomplete="off">
+                    </div>
+
                     <div class="form-group">
                         <label for="method">HTTP Method</label>
                         <select id="method">
@@ -365,10 +371,30 @@
     <script>
         const BRIDGE_URL = 'http://localhost:3000';
         
+        // Returns request headers, including the bearer token when present so
+        // the bridge server can require authentication on every request.
+        function authHeaders(base = {}) {
+            const headers = { ...base };
+            const token = document.getElementById('apiToken').value.trim();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
         // Check connection on load
         window.addEventListener('DOMContentLoaded', () => {
+            // Restore a previously entered token for this tab only (not persisted to disk).
+            const savedToken = sessionStorage.getItem('bridgeApiToken');
+            if (savedToken) {
+                document.getElementById('apiToken').value = savedToken;
+            }
+            document.getElementById('apiToken').addEventListener('input', (e) => {
+                sessionStorage.setItem('bridgeApiToken', e.target.value);
+            });
+
             checkConnection();
-            
+
             // Handle custom endpoint selection
             document.getElementById('endpoint').addEventListener('change', (e) => {
                 const customGroup = document.getElementById('customEndpointGroup');
@@ -385,7 +411,7 @@
             const statusText = document.getElementById('statusText');
             
             try {
-                const response = await fetch(`${BRIDGE_URL}/api/status`);
+                const response = await fetch(`${BRIDGE_URL}/api/status`, { headers: authHeaders() });
                 if (response.ok) {
                     statusDot.classList.add('connected');
                     statusText.textContent = 'Connected to bridge server';
@@ -448,9 +474,9 @@
             try {
                 const options = {
                     method: method,
-                    headers: {
+                    headers: authHeaders({
                         'Content-Type': 'application/json',
-                    }
+                    })
                 };
                 
                 if (body) {
@@ -485,7 +511,7 @@
                 
             } catch (error) {
                 responseBox.className = 'response-box error';
-                responseBox.textContent = `Error: ${error.message}\n\nMake sure:\n1. Bridge server is running on localhost:3000\n2. CORS is enabled on the bridge server\n3. You're accessing this page from a browser (not blocked by network policies)`;
+                responseBox.textContent = `Error: ${error.message}\n\nMake sure:\n1. Bridge server is running on localhost:3000\n2. CORS allows this page's origin (restricted, not *) and the API token is correct\n3. You're accessing this page from a browser (not blocked by network policies)`;
             } finally {
                 sendButton.disabled = false;
                 buttonText.textContent = 'Send Request';
@@ -537,7 +563,7 @@
                     methodSelect.value = 'GET';
                     endpointSelect.value = 'custom';
                     document.getElementById('customEndpointGroup').style.display = 'block';
-                    document.getElementById('customEndpoint').value = '/api/filesystem/list?path=C:/Users/james/Documents';
+                    document.getElementById('customEndpoint').value = '/api/filesystem/list?path=.';
                     requestBody.value = '';
                     sendRequest();
                     break;

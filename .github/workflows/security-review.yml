@@ -1,0 +1,29 @@
+name: Claude Security Review
+
+# Automatically reviews every pull request for security vulnerabilities
+# using Anthropic's Claude Code security reviewer, posting findings as
+# inline comments on the PR.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Least-privilege permissions: read the code, write PR comments.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  security-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch enough history for the action to diff the PR.
+          fetch-depth: 0
+
+      - name: Run Claude security review
+        uses: anthropics/claude-code-security-review@main
+        with:
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          comment-pr: true
