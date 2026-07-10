@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Government Engagement Dashboard</title>
+<style>
+:root{
+  --plane:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f3f0;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --line:#c3c2b7; --border:rgba(11,11,11,.10);
+  --brand:#2a78d6; --brand-ink:#184f95;
+  --aqua:#1baf7a; --violet:#4a3aa7; --orange:#eb6834; --magenta:#e87ba4;
+  --good:#0ca30c; --warning:#b07600; --serious:#c85a2f; --critical:#d03b3b;
+  --shadow:0 1px 2px rgba(11,11,11,.04),0 8px 24px rgba(11,11,11,.06);
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#222220;
+    --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --line:#383835; --border:rgba(255,255,255,.10);
+    --brand:#3987e5; --brand-ink:#9ec5f4;
+    --aqua:#199e70; --violet:#9085e9; --orange:#d95926; --magenta:#d55181;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#e66767;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.5);
+  }
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--plane); color:var(--ink); line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:14px}
+a{color:var(--brand)}
+
+/* ---- Layout ---- */
+.app{max-width:1240px;margin:0 auto;padding:20px}
+header.top{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:18px 20px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px;
+}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand .logo{
+  width:42px;height:42px;border-radius:10px;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--brand),var(--violet));
+  display:grid;place-items:center;font-size:22px;
+}
+.brand h1{font-size:1.15em;line-height:1.15}
+.brand p{font-size:.82em;color:var(--muted)}
+.search{position:relative;flex:1 1 260px;max-width:420px}
+.search input{
+  width:100%;padding:10px 12px 10px 36px;border:1px solid var(--line);
+  border-radius:10px;background:var(--surface-2);color:var(--ink);
+}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2}
+.btn{
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink);
+  padding:9px 14px;border-radius:10px;font-weight:600;font-size:.9em;
+  display:inline-flex;align-items:center;gap:7px;transition:.15s;
+}
+.btn:hover{border-color:var(--brand);transform:translateY(-1px)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:6px 10px;font-size:.82em}
+.btn.danger:hover{border-color:var(--critical);color:var(--critical)}
+
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:18px}
+nav.tabs button{
+  border:1px solid transparent;background:transparent;color:var(--ink-2);
+  padding:9px 16px;border-radius:10px;font-weight:600;font-size:.92em;
+  display:flex;align-items:center;gap:8px;
+}
+nav.tabs button .count{
+  background:var(--surface-2);border:1px solid var(--border);color:var(--muted);
+  font-size:.78em;padding:1px 7px;border-radius:20px;font-variant-numeric:tabular-nums;
+}
+nav.tabs button.active{background:var(--surface);color:var(--ink);border-color:var(--border);box-shadow:var(--shadow)}
+nav.tabs button.active .count{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+.view{display:none}
+.view.active{display:block}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+}
+.grid{display:grid;gap:16px}
+.stats{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:18px}
+.stat{padding:16px 18px}
+.stat .label{font-size:.8em;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.stat .value{font-size:2em;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.stat .sub{font-size:.82em;color:var(--ink-2);margin-top:2px}
+
+.section-h{display:flex;align-items:center;gap:10px;margin:22px 0 12px}
+.section-h h2{font-size:1.1em}
+.section-h .spacer{flex:1}
+.muted{color:var(--muted)}
+.pill{
+  display:inline-flex;align-items:center;gap:5px;font-size:.76em;font-weight:600;
+  padding:2px 9px;border-radius:20px;background:var(--surface-2);
+  border:1px solid var(--border);color:var(--ink-2);white-space:nowrap;
+}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:var(--muted)}
+.dot.active{background:var(--good)} .dot.warm{background:var(--warning)}
+.dot.cold{background:var(--muted)} .dot.priority{background:var(--critical)}
+
+/* ---- People ---- */
+.people-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.person{padding:16px;cursor:pointer;transition:.15s;position:relative}
+.person:hover{border-color:var(--brand);transform:translateY(-2px)}
+.person .top-row{display:flex;gap:12px;align-items:flex-start}
+.avatar{
+  width:44px;height:44px;border-radius:11px;flex:0 0 auto;display:grid;place-items:center;
+  font-weight:700;color:#fff;font-size:1.05em;background:var(--brand);
+}
+.person h3{font-size:1em;line-height:1.2}
+.person .title{font-size:.85em;color:var(--ink-2)}
+.person .dept{font-size:.8em;color:var(--muted);margin-top:2px}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+.person .meta{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.8em;color:var(--muted)}
+
+/* ---- Departments ---- */
+.dept-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.dept-card{padding:18px}
+.dept-card h3{font-size:1.05em;display:flex;align-items:center;gap:8px}
+.dept-card .mandate{font-size:.88em;color:var(--ink-2);margin:8px 0}
+.dept-card .need{font-size:.85em;background:var(--surface-2);border-left:3px solid var(--brand);
+  padding:8px 10px;border-radius:0 8px 8px 0;margin:10px 0}
+.dept-card .feeds{font-size:.8em;color:var(--muted);margin-top:8px}
+.diagram-wrap{padding:18px;overflow-x:auto}
+.diagram-wrap svg{display:block;min-width:600px;width:100%;height:auto}
+
+/* ---- Tasks ---- */
+.task-board{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.task-col{padding:14px;background:var(--surface-2)}
+.task-col h3{font-size:.92em;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.task{padding:12px;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:10px;box-shadow:var(--shadow)}
+.task .t-title{font-weight:600;font-size:.92em}
+.task .t-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:.78em;color:var(--muted)}
+.task .t-actions{display:flex;gap:6px;margin-top:10px}
+.overdue{color:var(--critical);font-weight:600}
+.due-soon{color:var(--warning);font-weight:600}
+
+/* ---- Empty state ---- */
+.empty{text-align:center;padding:60px 20px}
+.empty .big{font-size:3em;margin-bottom:10px}
+.empty h2{margin-bottom:8px}
+.empty p{color:var(--muted);max-width:460px;margin:0 auto 20px}
+.empty .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* ---- Mission ---- */
+.mission textarea{width:100%;min-height:120px;padding:14px;border:1px solid var(--line);
+  border-radius:10px;background:var(--surface-2);color:var(--ink);resize:vertical;line-height:1.6}
+
+/* ---- Modal / Drawer ---- */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;
+  display:none;align-items:stretch;justify-content:flex-end}
+.overlay.open{display:flex}
+.drawer{width:min(560px,100%);background:var(--surface);height:100%;overflow-y:auto;
+  box-shadow:-8px 0 40px rgba(0,0,0,.3);animation:slidein .2s ease}
+@keyframes slidein{from{transform:translateX(30px);opacity:.4}to{transform:none;opacity:1}}
+.drawer-h{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);
+  padding:18px 20px;display:flex;align-items:center;gap:12px;z-index:2}
+.drawer-h h2{font-size:1.1em;flex:1}
+.drawer-body{padding:20px}
+.close-x{border:none;background:var(--surface-2);width:32px;height:32px;border-radius:8px;
+  font-size:1.1em;color:var(--ink-2)}
+
+.modal{align-items:center;justify-content:center}
+.modal .box{width:min(560px,92%);max-height:90vh;overflow-y:auto;background:var(--surface);
+  border-radius:var(--radius);box-shadow:var(--shadow);animation:pop .18s ease}
+@keyframes pop{from{transform:scale(.96);opacity:.5}to{transform:none;opacity:1}}
+.modal .box .drawer-h{border-radius:var(--radius) var(--radius) 0 0}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.82em;font-weight:600;color:var(--ink-2);margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;
+  background:var(--surface-2);color:var(--ink)}
+.field textarea{min-height:80px;resize:vertical}
+.field-row{display:flex;gap:12px}.field-row>*{flex:1}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+
+/* ---- Interaction timeline ---- */
+.timeline{margin-top:8px;border-left:2px solid var(--grid);padding-left:16px}
+.tl-item{position:relative;padding-bottom:18px}
+.tl-item::before{content:"";position:absolute;left:-23px;top:3px;width:12px;height:12px;
+  border-radius:50%;background:var(--brand);border:2px solid var(--surface)}
+.tl-item .tl-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tl-item .tl-h .when{font-size:.8em;color:var(--muted)}
+.tl-item .tl-sum{font-weight:600;margin:3px 0}
+.tl-item .tl-detail{font-size:.9em;color:var(--ink-2);white-space:pre-wrap}
+.channel-badge{font-size:.72em;font-weight:700;padding:1px 8px;border-radius:6px;color:#fff}
+.ch-Telegram{background:#229ed9}.ch-Email{background:var(--violet)}
+.ch-Meeting{background:var(--aqua)}.ch-Call{background:var(--orange)}
+.ch-WhatsApp{background:#25d366}.ch-Other{background:var(--muted)}
+
+.detail-row{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.9em}
+.detail-row .k{width:110px;color:var(--muted);flex:0 0 auto}
+.detail-row .v{flex:1}
+.subhead{font-size:.85em;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+  margin:22px 0 8px;font-weight:700}
+
+.banner{background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;
+  padding:12px 14px;font-size:.85em;color:var(--ink-2);margin-bottom:16px;display:flex;gap:10px;align-items:center}
+.banner strong{color:var(--ink)}
+
+.hidden{display:none!important}
+footer{text-align:center;color:var(--muted);font-size:.8em;padding:24px 0}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">🏛️</div>
+      <div>
+        <h1>Government Engagement Dashboard</h1>
+        <p>People · Interactions · Departments · Follow-ups</p>
+      </div>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+      <input id="globalSearch" type="search" placeholder="Search people, roles, notes…" autocomplete="off">
+    </div>
+    <button class="btn ghost sm" onclick="exportData()" title="Download a JSON backup">⬇ Export</button>
+    <button class="btn ghost sm" onclick="document.getElementById('importFile').click()" title="Load a JSON backup">⬆ Import</button>
+    <input type="file" id="importFile" accept="application/json" class="hidden" onchange="importData(event)">
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="overview" class="active">📊 Overview</button>
+    <button data-tab="people">👥 People <span class="count" id="cPeople">0</span></button>
+    <button data-tab="departments">🗂️ Departments <span class="count" id="cDepts">0</span></button>
+    <button data-tab="tasks">✅ Follow-ups <span class="count" id="cTasks">0</span></button>
+  </nav>
+
+  <!-- OVERVIEW -->
+  <section class="view active" id="view-overview">
+    <div class="grid stats" id="statCards"></div>
+    <div class="card mission" style="padding:18px;margin-bottom:18px">
+      <div class="section-h" style="margin:0 0 10px">
+        <h2>🎯 Strategy &amp; mission</h2>
+        <span class="spacer"></span>
+        <span class="muted" style="font-size:.8em">Auto-saves</span>
+      </div>
+      <textarea id="missionText" placeholder="What are we trying to achieve? Who are we serving, and how do the different departments fit into the goal? Write it here — it saves automatically."></textarea>
+    </div>
+    <div class="section-h"><h2>🔔 Upcoming &amp; overdue follow-ups</h2></div>
+    <div id="overviewTasks"></div>
+    <div class="section-h"><h2>🕑 Recent interactions</h2></div>
+    <div id="overviewInteractions"></div>
+  </section>
+
+  <!-- PEOPLE -->
+  <section class="view" id="view-people">
+    <div class="section-h">
+      <h2>Contacts in government</h2><span class="spacer"></span>
+      <select id="deptFilter" class="btn sm" style="padding-right:28px"></select>
+      <button class="btn primary sm" onclick="openPersonForm()">+ Add contact</button>
+    </div>
+    <div id="peopleContainer"></div>
+  </section>
+
+  <!-- DEPARTMENTS -->
+  <section class="view" id="view-departments">
+    <div class="section-h">
+      <h2>How the departments connect</h2><span class="spacer"></span>
+      <button class="btn primary sm" onclick="openDeptForm()">+ Add department</button>
+    </div>
+    <div class="card diagram-wrap" id="diagramCard" style="margin-bottom:18px"></div>
+    <div id="deptContainer"></div>
+  </section>
+
+  <!-- TASKS -->
+  <section class="view" id="view-tasks">
+    <div class="section-h">
+      <h2>Follow-ups &amp; tasks</h2><span class="spacer"></span>
+      <button class="btn primary sm" onclick="openTaskForm()">+ Add follow-up</button>
+    </div>
+    <div id="taskContainer"></div>
+  </section>
+
+  <footer>Data is stored privately in your browser (localStorage) — nothing is uploaded. Export regularly to keep a backup.</footer>
+</div>
+
+<!-- Person detail drawer -->
+<div class="overlay" id="drawer" onclick="if(event.target===this)closeDrawer()">
+  <div class="drawer">
+    <div class="drawer-h">
+      <h2 id="drawerTitle">Contact</h2>
+      <button class="btn ghost sm" id="drawerEdit">Edit</button>
+      <button class="close-x" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </div>
+</div>
+
+<!-- Generic modal -->
+<div class="overlay modal" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="box">
+    <div class="drawer-h"><h2 id="modalTitle">Add</h2><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="drawer-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Government Engagement Dashboard
+   Self-contained. Data persists in localStorage on THIS browser.
+   ============================================================ */
+const KEY='govDashboardData.v1';
+const CHANNELS=['Telegram','Email','Meeting','Call','WhatsApp','Other'];
+const PRIORITIES=['High','Medium','Low'];
+const STATUS_LABELS={active:'Active',warm:'In progress',cold:'Not yet engaged'};
+
+let data=load();
+let currentPersonId=null, activeTab='overview', query='', deptFilterVal='';
+
+function load(){
+  try{const raw=localStorage.getItem(KEY);if(raw)return JSON.parse(raw);}catch(e){}
+  return {people:[],interactions:[],departments:[],tasks:[],mission:''};
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(data));renderAll();}
+function uid(){return Math.random().toString(36).slice(2,10)+performance.now().toString(36).replace('.','')}
+function esc(s){return (s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function initials(n){return (n||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('')}
+function avatarColor(id){const c=['var(--brand)','var(--aqua)','var(--violet)','var(--orange)','var(--magenta)'];let h=0;for(const ch of id)h=(h*31+ch.charCodeAt(0))>>>0;return c[h%c.length]}
+
+/* ---------- Date helpers ---------- */
+function fmtDate(d){if(!d)return '';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}
+function todayStr(){const d=new Date();return d.toISOString().slice(0,10)}
+function daysUntil(d){if(!d)return null;const a=new Date(d+'T00:00:00'),b=new Date(todayStr()+'T00:00:00');return Math.round((a-b)/86400000)}
+
+/* ---------- Lookups ---------- */
+const personById=id=>data.people.find(p=>p.id===id);
+const deptById=id=>data.departments.find(d=>d.id===id);
+const deptNameOf=p=>{const d=deptById(p.departmentId);return d?d.name:(p.department||'')}
+const interactionsOf=id=>data.interactions.filter(i=>i.personId===id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+const openTasksCount=()=>data.tasks.filter(t=>t.status!=='done').length;
+
+/* ============================================================
+   TABS + SEARCH
+   ============================================================ */
+document.getElementById('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-tab]');if(!b)return;
+  activeTab=b.dataset.tab;
+  document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+activeTab));
+  renderAll();
+});
+document.getElementById('globalSearch').addEventListener('input',e=>{
+  query=e.target.value.trim().toLowerCase();
+  if(query && activeTab!=='people'){activeTab='people';
+    document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.tab==='people'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-people'));}
+  renderPeople();
+});
+document.getElementById('deptFilter').addEventListener('change',e=>{deptFilterVal=e.target.value;renderPeople()});
+document.getElementById('missionText').addEventListener('input',e=>{data.mission=e.target.value;localStorage.setItem(KEY,JSON.stringify(data))});
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderAll(){
+  document.getElementById('cPeople').textContent=data.people.length;
+  document.getElementById('cDepts').textContent=data.departments.length;
+  document.getElementById('cTasks').textContent=openTasksCount();
+  document.getElementById('missionText').value=data.mission||'';
+  renderOverview();renderPeople();renderDepartments();renderTasks();renderDeptFilter();
+}
+
+function renderOverview(){
+  const totalInter=data.interactions.length;
+  const engaged=data.people.filter(p=>interactionsOf(p.id).length>0).length;
+  const overdue=data.tasks.filter(t=>t.status!=='done'&&t.due&&daysUntil(t.due)<0).length;
+  const stats=[
+    {label:'Contacts',value:data.people.length,sub:engaged+' engaged'},
+    {label:'Interactions logged',value:totalInter,sub:'across all channels'},
+    {label:'Departments mapped',value:data.departments.length,sub:''},
+    {label:'Open follow-ups',value:openTasksCount(),sub:overdue?overdue+' overdue':'on track'},
+  ];
+  document.getElementById('statCards').innerHTML=stats.map(s=>`
+    <div class="card stat"><div class="label">${esc(s.label)}</div>
+    <div class="value">${s.value}</div><div class="sub">${esc(s.sub)}</div></div>`).join('');
+
+  // upcoming tasks
+  const up=data.tasks.filter(t=>t.status!=='done').sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).slice(0,5);
+  document.getElementById('overviewTasks').innerHTML= up.length
+    ? `<div class="card" style="padding:6px 4px">`+up.map(taskRow).join('')+`</div>`
+    : emptyLine('No open follow-ups. 🎉');
+
+  // recent interactions
+  const recent=[...data.interactions].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
+  document.getElementById('overviewInteractions').innerHTML= recent.length
+    ? `<div class="card" style="padding:14px 16px">`+recent.map(i=>{
+        const p=personById(i.personId);
+        return `<div class="tl-item" style="border-left:0;padding-left:0;padding-bottom:14px" onclick="openPerson('${i.personId}')">
+          <div class="tl-h"><span class="channel-badge ch-${i.channel}">${i.channel}</span>
+          <strong style="cursor:pointer">${esc(p?p.name:'Unknown')}</strong>
+          <span class="when">${fmtDate(i.date)}</span></div>
+          <div class="tl-detail">${esc(i.summary)}</div></div>`;
+      }).join('')+`</div>`
+    : emptyLine('No interactions logged yet.');
+}
+function emptyLine(t){return `<div class="card" style="padding:18px;color:var(--muted);text-align:center">${esc(t)}</div>`}
+
+/* ---------- PEOPLE ---------- */
+function renderDeptFilter(){
+  const sel=document.getElementById('deptFilter');
+  const opts=['<option value="">All departments</option>']
+    .concat(data.departments.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`));
+  sel.innerHTML=opts.join('');sel.value=deptFilterVal;
+}
+function matchesQuery(p){
+  if(!query)return true;
+  const hay=[p.name,p.title,deptNameOf(p),p.org,(p.tags||[]).join(' '),p.notes,
+    interactionsOf(p.id).map(i=>i.summary+' '+i.detail).join(' ')].join(' ').toLowerCase();
+  return hay.includes(query);
+}
+function renderPeople(){
+  const c=document.getElementById('peopleContainer');
+  if(!data.people.length){c.innerHTML=firstRunEmpty();return;}
+  let list=data.people.filter(matchesQuery);
+  if(deptFilterVal)list=list.filter(p=>p.departmentId===deptFilterVal);
+  list.sort((a,b)=>a.name.localeCompare(b.name));
+  if(!list.length){c.innerHTML=emptyLine('No contacts match your search.');return;}
+  c.className='grid people-grid';
+  c.innerHTML=list.map(p=>{
+    const n=interactionsOf(p.id).length;const last=interactionsOf(p.id)[0];
+    const st=p.status||'cold';
+    return `<div class="card person" onclick="openPerson('${p.id}')">
+      <div class="top-row">
+        <div class="avatar" style="background:${avatarColor(p.id)}">${esc(initials(p.name))}</div>
+        <div style="min-width:0">
+          <h3>${esc(p.name)}</h3>
+          <div class="title">${esc(p.title||'—')}</div>
+          <div class="dept">${esc(deptNameOf(p)||'No department')}</div>
+        </div>
+      </div>
+      <div class="tags">
+        <span class="pill"><span class="dot ${st}"></span>${STATUS_LABELS[st]||st}</span>
+        ${(p.tags||[]).slice(0,3).map(t=>`<span class="pill">${esc(t)}</span>`).join('')}
+      </div>
+      <div class="meta">💬 ${n} interaction${n===1?'':'s'} ${last?'· last '+fmtDate(last.date):''}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- DEPARTMENTS ---------- */
+function renderDepartments(){
+  const c=document.getElementById('deptContainer');
+  renderDiagram();
+  if(!data.departments.length){
+    document.getElementById('diagramCard').classList.add('hidden');
+    c.innerHTML=emptyLine('No departments yet. Add the ministries/agencies you engage so you can map how they feed into one another.');
+    return;
+  }
+  document.getElementById('diagramCard').classList.remove('hidden');
+  c.className='grid dept-grid';
+  c.innerHTML=data.departments.map(d=>{
+    const contacts=data.people.filter(p=>p.departmentId===d.id);
+    const feeds=(d.feedsInto||[]).map(id=>deptById(id)).filter(Boolean);
+    return `<div class="card dept-card">
+      <h3>🗂️ ${esc(d.name)}
+        <span class="spacer" style="flex:1"></span>
+        <button class="btn ghost sm" onclick="openDeptForm('${d.id}')">Edit</button></h3>
+      ${d.mandate?`<div class="mandate">${esc(d.mandate)}</div>`:''}
+      ${d.whatWeNeed?`<div class="need"><strong>What we need:</strong> ${esc(d.whatWeNeed)}</div>`:''}
+      <div style="font-size:.82em;color:var(--muted);margin-top:10px">
+        👥 ${contacts.length} contact${contacts.length===1?'':'s'}${contacts.length?': '+contacts.map(p=>esc(p.name)).join(', '):''}</div>
+      ${feeds.length?`<div class="feeds">➡ Feeds into: ${feeds.map(f=>esc(f.name)).join(', ')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderDiagram(){
+  const wrap=document.getElementById('diagramCard');
+  const nodes=data.departments;
+  if(nodes.length<1){wrap.innerHTML='';return;}
+  const W=760;
+  const R=nodes.length===1?0:Math.max(140,nodes.length*24);
+  const H=nodes.length===1?200:2*R+180,cx=W/2,cy=H/2;
+  const pos={};
+  nodes.forEach((d,i)=>{
+    const a=-Math.PI/2 + i*2*Math.PI/nodes.length;
+    pos[d.id]=nodes.length===1?{x:cx,y:cy}:{x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)};
+  });
+  let edges='';
+  nodes.forEach(d=>(d.feedsInto||[]).forEach(t=>{
+    if(!pos[t])return;const a=pos[d.id],b=pos[t];
+    const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    edges+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--line)" stroke-width="2" marker-end="url(#arw)"/>`;
+  }));
+  let circles='';
+  nodes.forEach(d=>{const p=pos[d.id];const label=d.name.length>22?d.name.slice(0,20)+'…':d.name;
+    circles+=`<g>
+      <circle cx="${p.x}" cy="${p.y}" r="30" fill="var(--surface-2)" stroke="var(--brand)" stroke-width="2"/>
+      <text x="${p.x}" y="${p.y+52}" text-anchor="middle" font-size="12" fill="var(--ink)" font-weight="600">${esc(label)}</text>
+      <text x="${p.x}" y="${p.y+5}" text-anchor="middle" font-size="16">🏛️</text></g>`;
+  });
+  wrap.innerHTML=`<div style="font-size:.85em;color:var(--muted);margin-bottom:8px">Arrows show how one department feeds into another. Edit a department to set its "feeds into" links.</div>
+  <svg viewBox="0 0 ${W} ${H}">
+    <defs><marker id="arw" markerWidth="10" markerHeight="10" refX="34" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L6,3 L0,6 Z" fill="var(--brand)"/></marker></defs>
+    ${edges}${circles}</svg>`;
+}
+
+/* ---------- TASKS ---------- */
+function renderTasks(){
+  const c=document.getElementById('taskContainer');
+  if(!data.tasks.length){c.innerHTML=emptyLine('No follow-ups yet. Add tasks so nothing falls through the cracks.');return;}
+  const cols=[['open','⚪ To do'],['in-progress','🔵 In progress'],['done','✅ Done']];
+  c.className='grid task-board';
+  c.innerHTML=cols.map(([st,label])=>{
+    const items=data.tasks.filter(t=>t.status===st)
+      .sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+    return `<div class="card task-col"><h3>${label} <span class="count">${items.length}</span></h3>
+      ${items.map(taskCard).join('')||'<div class="muted" style="font-size:.85em;text-align:center;padding:10px">—</div>'}</div>`;
+  }).join('');
+}
+function dueLabel(t){
+  if(!t.due)return '';const d=daysUntil(t.due);
+  if(t.status==='done')return `<span>${fmtDate(t.due)}</span>`;
+  if(d<0)return `<span class="overdue">⚠ ${-d}d overdue</span>`;
+  if(d===0)return `<span class="due-soon">Due today</span>`;
+  if(d<=3)return `<span class="due-soon">Due in ${d}d</span>`;
+  return `<span>${fmtDate(t.due)}</span>`;
+}
+function taskCard(t){
+  const p=t.personId?personById(t.personId):null;
+  const dep=t.departmentId?deptById(t.departmentId):null;
+  const prClass=t.priority==='High'?'priority':t.priority==='Medium'?'warm':'cold';
+  const nextStatus=t.status==='open'?'in-progress':t.status==='in-progress'?'done':'open';
+  const nextLabel=t.status==='done'?'Reopen':t.status==='open'?'Start':'Done';
+  return `<div class="task">
+    <div class="t-title">${esc(t.title)}</div>
+    <div class="t-meta">
+      <span class="pill"><span class="dot ${prClass}"></span>${esc(t.priority||'—')}</span>
+      ${p?`<span onclick="openPerson('${p.id}')" style="cursor:pointer">👤 ${esc(p.name)}</span>`:''}
+      ${dep?`<span>🗂️ ${esc(dep.name)}</span>`:''}
+      ${dueLabel(t)}
+    </div>
+    <div class="t-actions">
+      <button class="btn sm" onclick="cycleTask('${t.id}','${nextStatus}')">${nextLabel}</button>
+      <button class="btn ghost sm" onclick="openTaskForm('${t.id}')">Edit</button>
+      <button class="btn ghost sm danger" onclick="delTask('${t.id}')">Delete</button>
+    </div></div>`;
+}
+function taskRow(t){
+  const p=t.personId?personById(t.personId):null;
+  return `<div class="detail-row" style="padding:10px 12px;align-items:center">
+    <span style="flex:1"><strong>${esc(t.title)}</strong>${p?` <span class="muted">· ${esc(p.name)}</span>`:''}</span>
+    ${dueLabel(t)}
+    <button class="btn ghost sm" style="margin-left:8px" onclick="cycleTask('${t.id}','${t.status==='done'?'open':'done'}')">${t.status==='done'?'Reopen':'Done'}</button>
+  </div>`;
+}
+function cycleTask(id,st){const t=data.tasks.find(x=>x.id===id);if(t){t.status=st;save();}}
+function delTask(id){if(confirm('Delete this follow-up?')){data.tasks=data.tasks.filter(t=>t.id!==id);save();}}
+
+/* ============================================================
+   PERSON DRAWER
+   ============================================================ */
+function openPerson(id){
+  currentPersonId=id;const p=personById(id);if(!p)return;
+  document.getElementById('drawerTitle').textContent=p.name;
+  document.getElementById('drawerEdit').onclick=()=>openPersonForm(id);
+  const inter=interactionsOf(id);
+  const tasks=data.tasks.filter(t=>t.personId===id&&t.status!=='done');
+  document.getElementById('drawerBody').innerHTML=`
+    <div class="top-row" style="margin-bottom:14px">
+      <div class="avatar" style="width:56px;height:56px;font-size:1.3em;background:${avatarColor(p.id)}">${esc(initials(p.name))}</div>
+      <div><div style="font-weight:700;font-size:1.05em">${esc(p.title||'')}</div>
+      <div class="muted">${esc(deptNameOf(p)||'')} ${p.org?'· '+esc(p.org):''}</div></div>
+    </div>
+    <div class="tags" style="margin-bottom:14px">
+      <span class="pill"><span class="dot ${p.status||'cold'}"></span>${STATUS_LABELS[p.status||'cold']}</span>
+      ${(p.tags||[]).map(t=>`<span class="pill">${esc(t)}</span>`).join('')}
+    </div>
+    ${p.email?detailRow('Email',`<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`):''}
+    ${p.phone?detailRow('Phone',esc(p.phone)):''}
+    ${p.telegram?detailRow('Telegram',esc(p.telegram)):''}
+    ${p.notes?detailRow('Notes',esc(p.notes)):''}
+
+    ${tasks.length?`<div class="subhead">Open follow-ups</div>
+      <div class="card" style="padding:4px">${tasks.map(taskRow).join('')}</div>`:''}
+
+    <div class="subhead" style="display:flex;align-items:center">Interactions
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn primary sm" onclick="openInteractionForm('${id}')">+ Log interaction</button></div>
+    ${inter.length? `<div class="timeline">`+inter.map(i=>`
+        <div class="tl-item">
+          <div class="tl-h"><span class="channel-badge ch-${i.channel}">${i.channel}</span>
+            <span class="when">${fmtDate(i.date)}</span>
+            <span class="spacer" style="flex:1"></span>
+            <button class="btn ghost sm" onclick="openInteractionForm('${id}','${i.id}')">✎</button>
+            <button class="btn ghost sm danger" onclick="delInteraction('${i.id}')">✕</button></div>
+          <div class="tl-sum">${esc(i.summary)}</div>
+          ${i.detail?`<div class="tl-detail">${esc(i.detail)}</div>`:''}
+        </div>`).join('')+`</div>`
+      : `<p class="muted" style="font-size:.9em">No interactions logged yet.</p>`}
+
+    <div style="margin-top:24px;display:flex;gap:10px">
+      <button class="btn" onclick="openPersonForm('${id}')">Edit contact</button>
+      <button class="btn ghost danger" onclick="delPerson('${id}')">Delete</button>
+    </div>`;
+  document.getElementById('drawer').classList.add('open');
+}
+function detailRow(k,v){return `<div class="detail-row"><span class="k">${k}</span><span class="v">${v}</span></div>`}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');currentPersonId=null;}
+function delPerson(id){
+  if(!confirm('Delete this contact and all their interactions?'))return;
+  data.people=data.people.filter(p=>p.id!==id);
+  data.interactions=data.interactions.filter(i=>i.personId!==id);
+  data.tasks=data.tasks.filter(t=>t.personId!==id);
+  closeDrawer();save();
+}
+function delInteraction(id){if(confirm('Delete this interaction?')){data.interactions=data.interactions.filter(i=>i.id!==id);save();if(currentPersonId)openPerson(currentPersonId);}}
+
+/* ============================================================
+   MODAL FORMS
+   ============================================================ */
+function openModal(title,html){document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML=html;document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+
+function deptOptions(sel){return '<option value="">— none —</option>'+data.departments.map(d=>
+  `<option value="${d.id}" ${d.id===sel?'selected':''}>${esc(d.name)}</option>`).join('')}
+function personOptions(sel){return '<option value="">— none —</option>'+data.people.map(p=>
+  `<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.name)}</option>`).join('')}
+
+/* --- Person form --- */
+function openPersonForm(id){
+  const p=id?personById(id):{};
+  openModal(id?'Edit contact':'Add contact',`
+    <div class="field"><label>Full name *</label><input id="f_name" value="${esc(p.name||'')}" placeholder="Jane Dlamini"></div>
+    <div class="field-row">
+      <div class="field"><label>Title / role</label><input id="f_title" value="${esc(p.title||'')}" placeholder="Director-General"></div>
+      <div class="field"><label>Status</label><select id="f_status">
+        ${Object.entries(STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${p.status===k?'selected':''}>${v}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="field"><label>Department</label><select id="f_dept">${deptOptions(p.departmentId)}</select></div>
+    <div class="field"><label>Organisation / office (if not a listed dept)</label><input id="f_org" value="${esc(p.org||'')}" placeholder="Office of the Premier"></div>
+    <div class="field-row">
+      <div class="field"><label>Email</label><input id="f_email" value="${esc(p.email||'')}"></div>
+      <div class="field"><label>Phone</label><input id="f_phone" value="${esc(p.phone||'')}"></div>
+    </div>
+    <div class="field"><label>Telegram handle</label><input id="f_telegram" value="${esc(p.telegram||'')}" placeholder="@handle"></div>
+    <div class="field"><label>Tags (comma separated)</label><input id="f_tags" value="${esc((p.tags||[]).join(', '))}" placeholder="trade, ally, gatekeeper"></div>
+    <div class="field"><label>Notes</label><textarea id="f_notes" placeholder="Background, role in the goal, how we met…">${esc(p.notes||'')}</textarea></div>
+    <div class="form-actions">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="savePerson('${id||''}')">Save</button>
+    </div>`);
+}
+function savePerson(id){
+  const name=document.getElementById('f_name').value.trim();
+  if(!name){alert('Name is required');return;}
+  const rec={
+    id:id||uid(),name,
+    title:document.getElementById('f_title').value.trim(),
+    status:document.getElementById('f_status').value,
+    departmentId:document.getElementById('f_dept').value||null,
+    org:document.getElementById('f_org').value.trim(),
+    email:document.getElementById('f_email').value.trim(),
+    phone:document.getElementById('f_phone').value.trim(),
+    telegram:document.getElementById('f_telegram').value.trim(),
+    tags:document.getElementById('f_tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+    notes:document.getElementById('f_notes').value.trim(),
+  };
+  if(id){const i=data.people.findIndex(p=>p.id===id);data.people[i]={...data.people[i],...rec};}
+  else data.people.push(rec);
+  closeModal();save();
+  if(currentPersonId===id||!id){openPerson(rec.id);}
+}
+
+/* --- Interaction form --- */
+function openInteractionForm(personId,intId){
+  const it=intId?data.interactions.find(i=>i.id===intId):{date:todayStr(),channel:'Telegram'};
+  openModal(intId?'Edit interaction':'Log interaction',`
+    <div class="field-row">
+      <div class="field"><label>Channel</label><select id="i_channel">
+        ${CHANNELS.map(c=>`<option value="${c}" ${it.channel===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="field"><label>Date</label><input type="date" id="i_date" value="${it.date||todayStr()}"></div>
+    </div>
+    <div class="field"><label>Summary *</label><input id="i_summary" value="${esc(it.summary||'')}" placeholder="Discussed trade facilitation for SA exporters"></div>
+    <div class="field"><label>Detail / notes</label><textarea id="i_detail" placeholder="Paste the relevant part of the Telegram chat or email, key quotes, what was agreed…">${esc(it.detail||'')}</textarea></div>
+    <div class="form-actions">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveInteraction('${personId}','${intId||''}')">Save</button>
+    </div>`);
+}
+function saveInteraction(personId,intId){
+  const summary=document.getElementById('i_summary').value.trim();
+  if(!summary){alert('Summary is required');return;}
+  const rec={id:intId||uid(),personId,
+    channel:document.getElementById('i_channel').value,
+    date:document.getElementById('i_date').value||todayStr(),
+    summary,detail:document.getElementById('i_detail').value.trim()};
+  if(intId){const i=data.interactions.findIndex(x=>x.id===intId);data.interactions[i]=rec;}
+  else data.interactions.push(rec);
+  closeModal();save();openPerson(personId);
+}
+
+/* --- Department form --- */
+function openDeptForm(id){
+  const d=id?deptById(id):{};
+  const feeds=d.feedsInto||[];
+  openModal(id?'Edit department':'Add department',`
+    <div class="field"><label>Department / agency name *</label><input id="d_name" value="${esc(d.name||'')}" placeholder="Dept. of International Relations (DIRCO)"></div>
+    <div class="field"><label>Mandate / what they do</label><textarea id="d_mandate" placeholder="Their remit and why they matter to us">${esc(d.mandate||'')}</textarea></div>
+    <div class="field"><label>What we need from them</label><textarea id="d_need" placeholder="The ask, decision, or support we're seeking">${esc(d.whatWeNeed||'')}</textarea></div>
+    <div class="field"><label>Feeds into (other departments)</label>
+      <select id="d_feeds" multiple size="${Math.min(6,Math.max(3,data.departments.length))}" style="height:auto">
+        ${data.departments.filter(x=>x.id!==id).map(x=>`<option value="${x.id}" ${feeds.includes(x.id)?'selected':''}>${esc(x.name)}</option>`).join('')||'<option disabled>Add more departments first</option>'}
+      </select>
+      <div class="muted" style="font-size:.78em;margin-top:4px">Hold Ctrl/Cmd to select multiple. Drives the connection diagram.</div></div>
+    <div class="form-actions">
+      ${id?`<button class="btn ghost danger" style="margin-right:auto" onclick="delDept('${id}')">Delete</button>`:''}
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveDept('${id||''}')">Save</button>
+    </div>`);
+}
+function saveDept(id){
+  const name=document.getElementById('d_name').value.trim();
+  if(!name){alert('Name is required');return;}
+  const feeds=[...document.getElementById('d_feeds').selectedOptions].map(o=>o.value);
+  const rec={id:id||uid(),name,
+    mandate:document.getElementById('d_mandate').value.trim(),
+    whatWeNeed:document.getElementById('d_need').value.trim(),
+    feedsInto:feeds};
+  if(id){const i=data.departments.findIndex(x=>x.id===id);data.departments[i]=rec;}
+  else data.departments.push(rec);
+  closeModal();save();
+}
+function delDept(id){
+  if(!confirm('Delete this department? Contacts stay but lose their department link.'))return;
+  data.departments=data.departments.filter(d=>d.id!==id);
+  data.departments.forEach(d=>d.feedsInto=(d.feedsInto||[]).filter(f=>f!==id));
+  data.people.forEach(p=>{if(p.departmentId===id)p.departmentId=null});
+  data.tasks.forEach(t=>{if(t.departmentId===id)t.departmentId=null});
+  closeModal();save();
+}
+
+/* --- Task form --- */
+function openTaskForm(id){
+  const t=id?data.tasks.find(x=>x.id===id):{priority:'Medium',status:'open'};
+  openModal(id?'Edit follow-up':'Add follow-up',`
+    <div class="field"><label>Task *</label><input id="t_title" value="${esc(t.title||'')}" placeholder="Send follow-up proposal to the DG"></div>
+    <div class="field-row">
+      <div class="field"><label>Related contact</label><select id="t_person">${personOptions(t.personId)}</select></div>
+      <div class="field"><label>Related department</label><select id="t_dept">${deptOptions(t.departmentId)}</select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Priority</label><select id="t_priority">
+        ${PRIORITIES.map(p=>`<option ${t.priority===p?'selected':''}>${p}</option>`).join('')}</select></div>
+      <div class="field"><label>Due date</label><input type="date" id="t_due" value="${t.due||''}"></div>
+      <div class="field"><label>Status</label><select id="t_status">
+        <option value="open" ${t.status==='open'?'selected':''}>To do</option>
+        <option value="in-progress" ${t.status==='in-progress'?'selected':''}>In progress</option>
+        <option value="done" ${t.status==='done'?'selected':''}>Done</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="saveTask('${id||''}')">Save</button>
+    </div>`);
+}
+function saveTask(id){
+  const title=document.getElementById('t_title').value.trim();
+  if(!title){alert('Task is required');return;}
+  const rec={id:id||uid(),title,
+    personId:document.getElementById('t_person').value||null,
+    departmentId:document.getElementById('t_dept').value||null,
+    priority:document.getElementById('t_priority').value,
+    due:document.getElementById('t_due').value||null,
+    status:document.getElementById('t_status').value};
+  if(id){const i=data.tasks.findIndex(x=>x.id===id);data.tasks[i]=rec;}
+  else data.tasks.push(rec);
+  closeModal();save();
+}
+
+/* ============================================================
+   IMPORT / EXPORT / SAMPLE
+   ============================================================ */
+function exportData(){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='gov-dashboard-backup.json';a.click();URL.revokeObjectURL(url);
+}
+function importData(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const d=JSON.parse(r.result);
+    if(!d.people||!d.interactions){alert('That does not look like a dashboard backup.');return;}
+    if(!confirm('Replace all current data with the imported file?'))return;
+    data={people:[],interactions:[],departments:[],tasks:[],mission:'',...d};
+    save();alert('Imported successfully.');
+  }catch(e){alert('Could not read file: '+e.message)}};
+  r.readAsText(file);ev.target.value='';
+}
+
+function firstRunEmpty(){
+  return `<div class="card empty">
+    <div class="big">🏛️</div>
+    <h2>Start building your engagement map</h2>
+    <p>Add the government officials you've spoken to, log the context from your Telegram chats and emails, map how the departments connect, and track your follow-ups — all searchable in one place.</p>
+    <div class="btns">
+      <button class="btn primary" onclick="openPersonForm()">+ Add your first contact</button>
+      <button class="btn" onclick="loadSample()">Load sample data to explore</button>
+    </div>
+    <p style="margin-top:18px;font-size:.8em">Sample data uses clearly-fictional placeholder names so you can see the layout.</p>
+  </div>`;
+}
+
+function loadSample(){
+  if(data.people.length && !confirm('This adds sample data alongside what you have. Continue?'))return;
+  const dircoId=uid(),homeId=uid(),tradeId=uid(),treasuryId=uid();
+  data.departments.push(
+    {id:dircoId,name:'DIRCO (International Relations)',mandate:'SA foreign policy, diplomatic missions and bilateral relations.',whatWeNeed:'Introductions to trade attachés and support for the SA diaspora initiative.',feedsInto:[tradeId]},
+    {id:tradeId,name:'DTIC (Trade, Industry & Competition)',mandate:'Trade policy, incentives and industrial development.',whatWeNeed:'Guidance on export incentives and a letter of support.',feedsInto:[treasuryId]},
+    {id:homeId,name:'Home Affairs (DHA)',mandate:'Citizenship, immigration and civic services.',whatWeNeed:'Streamlined visa pathway for returning South Africans.',feedsInto:[dircoId]},
+    {id:treasuryId,name:'National Treasury',mandate:'Public finance, budget and economic policy.',whatWeNeed:'Sign-off on any funding or fiscal implications.',feedsInto:[]},
+  );
+  const p1=uid(),p2=uid(),p3=uid();
+  data.people.push(
+    {id:p1,name:'[Sample] Thabo Nkosi',title:'Director-General',status:'active',departmentId:dircoId,org:'',email:'sample@example.gov.za',phone:'',telegram:'@sample_thabo',tags:['champion','decision-maker'],notes:'Fictional placeholder. Very supportive of the diaspora initiative; prefers Telegram.'},
+    {id:p2,name:'[Sample] Lerato Mokoena',title:'Chief Director: Export Promotion',status:'warm',departmentId:tradeId,org:'',email:'',phone:'',telegram:'@sample_lerato',tags:['gatekeeper','trade'],notes:'Fictional placeholder. Needs a formal proposal before escalating internally.'},
+    {id:p3,name:'[Sample] Sipho Adams',title:'Deputy Director: Civic Services',status:'cold',departmentId:homeId,org:'',email:'',phone:'',telegram:'',tags:['visas'],notes:'Fictional placeholder. Introduced via DIRCO; not yet met.'},
+  );
+  data.interactions.push(
+    {id:uid(),personId:p1,channel:'Telegram',date:offsetDate(-14),summary:'Intro call — presented the initiative',detail:'Warm reception. Asked us to send a one-pager and offered to connect us with DTIC.'},
+    {id:uid(),personId:p1,channel:'Email',date:offsetDate(-6),summary:'Sent one-pager, he forwarded internally',detail:'Confirmed he looped in Lerato at DTIC. Suggested a joint meeting next month.'},
+    {id:uid(),personId:p2,channel:'Meeting',date:offsetDate(-3),summary:'First meeting on export incentives',detail:'Positive but cautious. Wants a formal written proposal covering scope and expected outcomes.'},
+  );
+  data.tasks.push(
+    {id:uid(),title:'Draft formal proposal for DTIC',personId:p2,departmentId:tradeId,priority:'High',due:offsetDate(4),status:'in-progress'},
+    {id:uid(),title:'Schedule joint DIRCO × DTIC meeting',personId:p1,departmentId:dircoId,priority:'Medium',due:offsetDate(10),status:'open'},
+    {id:uid(),title:'Request intro meeting with Home Affairs',personId:p3,departmentId:homeId,priority:'Low',due:offsetDate(-2),status:'open'},
+  );
+  if(!data.mission)data.mission='Goal: open pathways for South Africans (and the diaspora) through coordinated engagement across DIRCO, DTIC, Home Affairs and Treasury. DIRCO opens doors and feeds trade contacts to DTIC; DTIC shapes the commercial mechanism, which Treasury must ultimately sign off; Home Affairs handles the civic/immigration side and loops back to DIRCO. This is placeholder text — replace with your real strategy.';
+  save();closeDrawer();
+}
+function offsetDate(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
+
+/* ---------- init ---------- */
+renderAll();
+</script>
+</body>
+</html>
