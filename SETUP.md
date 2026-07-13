@@ -55,15 +55,22 @@ down anywhere.
 
 ## 3. Email dropbox (forward + BCC)
 
+The engagements are with **U.S. government** officials (the cause is South
+Africa / South Africans). A **dedicated Gmail account** is used as the dropbox
+so that only engagement correspondence is ever readable — no personal mail is
+exposed.
+
 ### The address
 
-**`james+gov@dynamicforexllc.com`**
+**`usgovlog@gmail.com`** — a dedicated Gmail account created for this purpose.
 
-This is a plus-alias on the connected Gmail account — it needs no admin setup
-and delivers straight into the `james@dynamicforexllc.com` inbox. ("gov" can be
-swapped for any word.) A cleaner dedicated address
-(e.g. `engagements@dynamicforexllc.com`) can be created later in Google Admin
-if preferred; the ingestion side is identical.
+Because it is dedicated, the **entire inbox is the engagement bucket** — no
+plus-alias and no filter are required. Everything that arrives is relevant.
+
+Account hygiene:
+- Turn on **2-factor authentication** — this inbox is the engagement record.
+- Set the **display name** to something intentional, e.g.
+  *"James Panter – Engagements"*, so forwards/BCCs look deliberate.
 
 ### Message to send to contacts
 
@@ -76,7 +83,7 @@ if preferred; the ingestion side is identical.
 >
 > Two small asks:
 > 1. Could you **forward our previous email threads** (the full thread, please —
->    not just the latest reply) to: **james+gov@dynamicforexllc.com**
+>    not just the latest reply) to: **usgovlog@gmail.com**
 > 2. Going forward, please **add that same address as a BCC** whenever you
 >    email me.
 >
@@ -88,24 +95,14 @@ if preferred; the ingestion side is identical.
 > so the whole thread must be included for the parse to reconstruct who said
 > what. BCCs on new mail are captured automatically.
 
-### Gmail filter (one-time, ~1 minute)
+### Connecting it
 
-Keeps this stream out of the main inbox and in a clean bucket:
+Point the Gmail integration at **`usgovlog@gmail.com`** (re-authorize the Gmail
+connection with this account, instead of / alongside the current one). Once
+connected, the whole inbox is read on each sync — no filter setup needed.
 
-1. Gmail → **Settings ⚙️ → See all settings → Filters and Blocked Addresses →
-   Create a new filter**.
-2. In **"Has the words"**, paste exactly:
-   ```
-   deliveredto:james+gov@dynamicforexllc.com
-   ```
-   (This reliably catches plus-aliased mail, **including BCCs**, which a plain
-   "To" filter misses.)
-3. **Create filter**, then tick:
-   - ✅ Skip the Inbox (Archive it)
-   - ✅ Apply the label → new label **`Gov-Engagement`**
-   - ✅ Never send it to Spam
-   - ✅ Also apply filter to matching conversations
-4. **Create filter.**
+An optional `Imported` label is applied to threads after they're processed, so
+nothing is counted twice.
 
 ---
 
@@ -113,11 +110,12 @@ Keeps this stream out of the main inbox and in a clean bucket:
 
 A "sync" does the following:
 
-1. Search `label:Gov-Engagement` for anything new since the last run.
+1. Read the `usgovlog@gmail.com` inbox for anything new since the last run
+   (the whole inbox is the bucket — no filter needed).
 2. Parse each thread → extract the official's name/email + a dated summary of
    what was discussed.
 3. Dedupe against existing dashboard contacts (by name/email).
-4. Apply an `Imported` sub-label to each processed thread so nothing is counted
+4. Apply an `Imported` label to each processed thread so nothing is counted
    twice.
 5. Produce an `import.json` to load into the dashboard via **Import**.
 

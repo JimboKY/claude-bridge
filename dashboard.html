@@ -642,13 +642,13 @@ function openPersonForm(id){
   openModal(id?'Edit contact':'Add contact',`
     <div class="field"><label>Full name *</label><input id="f_name" value="${esc(p.name||'')}" placeholder="Jane Dlamini"></div>
     <div class="field-row">
-      <div class="field"><label>Title / role</label><input id="f_title" value="${esc(p.title||'')}" placeholder="Director-General"></div>
+      <div class="field"><label>Title / role</label><input id="f_title" value="${esc(p.title||'')}" placeholder="Deputy Assistant Secretary"></div>
       <div class="field"><label>Status</label><select id="f_status">
         ${Object.entries(STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${p.status===k?'selected':''}>${v}</option>`).join('')}
       </select></div>
     </div>
     <div class="field"><label>Department</label><select id="f_dept">${deptOptions(p.departmentId)}</select></div>
-    <div class="field"><label>Organisation / office (if not a listed dept)</label><input id="f_org" value="${esc(p.org||'')}" placeholder="Office of the Premier"></div>
+    <div class="field"><label>Organisation / office (if not a listed dept)</label><input id="f_org" value="${esc(p.org||'')}" placeholder="Embassy / Congressional office"></div>
     <div class="field-row">
       <div class="field"><label>Email</label><input id="f_email" value="${esc(p.email||'')}"></div>
       <div class="field"><label>Phone</label><input id="f_phone" value="${esc(p.phone||'')}"></div>
@@ -691,7 +691,7 @@ function openInteractionForm(personId,intId){
         ${CHANNELS.map(c=>`<option value="${c}" ${it.channel===c?'selected':''}>${c}</option>`).join('')}</select></div>
       <div class="field"><label>Date</label><input type="date" id="i_date" value="${it.date||todayStr()}"></div>
     </div>
-    <div class="field"><label>Summary *</label><input id="i_summary" value="${esc(it.summary||'')}" placeholder="Discussed trade facilitation for SA exporters"></div>
+    <div class="field"><label>Summary *</label><input id="i_summary" value="${esc(it.summary||'')}" placeholder="Discussed support for South Africans on our issue"></div>
     <div class="field"><label>Detail / notes</label><textarea id="i_detail" placeholder="Paste the relevant part of the Telegram chat or email, key quotes, what was agreed…">${esc(it.detail||'')}</textarea></div>
     <div class="form-actions">
       <button class="btn ghost" onclick="closeModal()">Cancel</button>
@@ -823,30 +823,30 @@ function firstRunEmpty(){
 
 function loadSample(){
   if(data.people.length && !confirm('This adds sample data alongside what you have. Continue?'))return;
-  const dircoId=uid(),homeId=uid(),tradeId=uid(),treasuryId=uid();
+  const stateId=uid(),usaidId=uid(),ustrId=uid(),congressId=uid();
   data.departments.push(
-    {id:dircoId,name:'DIRCO (International Relations)',mandate:'SA foreign policy, diplomatic missions and bilateral relations.',whatWeNeed:'Introductions to trade attachés and support for the SA diaspora initiative.',feedsInto:[tradeId]},
-    {id:tradeId,name:'DTIC (Trade, Industry & Competition)',mandate:'Trade policy, incentives and industrial development.',whatWeNeed:'Guidance on export incentives and a letter of support.',feedsInto:[treasuryId]},
-    {id:homeId,name:'Home Affairs (DHA)',mandate:'Citizenship, immigration and civic services.',whatWeNeed:'Streamlined visa pathway for returning South Africans.',feedsInto:[dircoId]},
-    {id:treasuryId,name:'National Treasury',mandate:'Public finance, budget and economic policy.',whatWeNeed:'Sign-off on any funding or fiscal implications.',feedsInto:[]},
+    {id:stateId,name:'U.S. Dept of State — African Affairs',mandate:'U.S. diplomacy and bilateral relations with South Africa and the region.',whatWeNeed:'A supportive posture on our issue and introductions to the right desk officers.',feedsInto:[congressId]},
+    {id:usaidId,name:'USAID (Southern Africa)',mandate:'U.S. development and humanitarian assistance programs.',whatWeNeed:'Program alignment and data to support our case.',feedsInto:[stateId]},
+    {id:ustrId,name:'U.S. Trade Representative (USTR)',mandate:'U.S. trade policy, including AGOA and market access.',whatWeNeed:'Consideration in AGOA discussions affecting South Africa.',feedsInto:[congressId]},
+    {id:congressId,name:'Congress — House Foreign Affairs',mandate:'Legislation, appropriations and oversight of foreign policy.',whatWeNeed:'A champion to raise our issue and support relevant legislation.',feedsInto:[]},
   );
   const p1=uid(),p2=uid(),p3=uid();
   data.people.push(
-    {id:p1,name:'[Sample] Thabo Nkosi',title:'Director-General',status:'active',departmentId:dircoId,org:'',email:'sample@example.gov.za',phone:'',telegram:'@sample_thabo',tags:['champion','decision-maker'],notes:'Fictional placeholder. Very supportive of the diaspora initiative; prefers Telegram.'},
-    {id:p2,name:'[Sample] Lerato Mokoena',title:'Chief Director: Export Promotion',status:'warm',departmentId:tradeId,org:'',email:'',phone:'',telegram:'@sample_lerato',tags:['gatekeeper','trade'],notes:'Fictional placeholder. Needs a formal proposal before escalating internally.'},
-    {id:p3,name:'[Sample] Sipho Adams',title:'Deputy Director: Civic Services',status:'cold',departmentId:homeId,org:'',email:'',phone:'',telegram:'',tags:['visas'],notes:'Fictional placeholder. Introduced via DIRCO; not yet met.'},
+    {id:p1,name:'[Sample] Michael Carter',title:'Deputy Assistant Secretary',status:'active',departmentId:stateId,org:'',email:'sample@example.gov',phone:'',telegram:'@sample_mcarter',tags:['champion','decision-maker'],notes:'Fictional placeholder. Engaged and sympathetic; prefers a concise briefing.'},
+    {id:p2,name:'[Sample] Sarah Bennett',title:'Mission Director, Southern Africa',status:'warm',departmentId:usaidId,org:'',email:'',phone:'',telegram:'',tags:['programs','ally'],notes:'Fictional placeholder. Wants supporting data before advocating internally.'},
+    {id:p3,name:'[Sample] Jennifer Cole',title:'Legislative Director',status:'cold',departmentId:congressId,org:'',email:'',phone:'',telegram:'',tags:['staffer','gatekeeper'],notes:'Fictional placeholder. Introduced via State; not yet met.'},
   );
   data.interactions.push(
-    {id:uid(),personId:p1,channel:'Telegram',date:offsetDate(-14),summary:'Intro call — presented the initiative',detail:'Warm reception. Asked us to send a one-pager and offered to connect us with DTIC.'},
-    {id:uid(),personId:p1,channel:'Email',date:offsetDate(-6),summary:'Sent one-pager, he forwarded internally',detail:'Confirmed he looped in Lerato at DTIC. Suggested a joint meeting next month.'},
-    {id:uid(),personId:p2,channel:'Meeting',date:offsetDate(-3),summary:'First meeting on export incentives',detail:'Positive but cautious. Wants a formal written proposal covering scope and expected outcomes.'},
+    {id:uid(),personId:p1,channel:'Meeting',date:offsetDate(-14),summary:'Intro meeting — presented our case',detail:'Warm reception. Asked for a one-page brief and offered to connect us with a Congressional office.'},
+    {id:uid(),personId:p1,channel:'Email',date:offsetDate(-6),summary:'Sent one-pager, he forwarded internally',detail:'Confirmed he looped in Jennifer Cole on the Hill. Suggested a follow-up next month.'},
+    {id:uid(),personId:p2,channel:'Call',date:offsetDate(-3),summary:'Call on program alignment',detail:'Positive but cautious. Needs supporting data before she can raise it with State.'},
   );
   data.tasks.push(
-    {id:uid(),title:'Draft formal proposal for DTIC',personId:p2,departmentId:tradeId,priority:'High',due:offsetDate(4),status:'in-progress'},
-    {id:uid(),title:'Schedule joint DIRCO × DTIC meeting',personId:p1,departmentId:dircoId,priority:'Medium',due:offsetDate(10),status:'open'},
-    {id:uid(),title:'Request intro meeting with Home Affairs',personId:p3,departmentId:homeId,priority:'Low',due:offsetDate(-2),status:'open'},
+    {id:uid(),title:'Send one-page brief to USAID',personId:p2,departmentId:usaidId,priority:'High',due:offsetDate(4),status:'in-progress'},
+    {id:uid(),title:'Request meeting with Congressional office',personId:p3,departmentId:congressId,priority:'Medium',due:offsetDate(10),status:'open'},
+    {id:uid(),title:'Follow up with State on next steps',personId:p1,departmentId:stateId,priority:'Low',due:offsetDate(-2),status:'open'},
   );
-  if(!data.mission)data.mission='Goal: open pathways for South Africans (and the diaspora) through coordinated engagement across DIRCO, DTIC, Home Affairs and Treasury. DIRCO opens doors and feeds trade contacts to DTIC; DTIC shapes the commercial mechanism, which Treasury must ultimately sign off; Home Affairs handles the civic/immigration side and loops back to DIRCO. This is placeholder text — replace with your real strategy.';
+  if(!data.mission)data.mission="Goal: advance the interests of South Africans through coordinated engagement with the U.S. government. USAID programs inform State's diplomatic posture; State and USTR both work with Congress, which controls legislation and appropriations (including AGOA). Map each relationship and keep follow-ups current. This is placeholder text — replace with your real strategy.";
   save();closeDrawer();
 }
 function offsetDate(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10)}
