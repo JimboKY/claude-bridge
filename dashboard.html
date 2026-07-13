@@ -231,8 +231,7 @@ footer{text-align:center;color:var(--muted);font-size:.8em;padding:24px 0}
       <input id="globalSearch" type="search" placeholder="Search people, roles, notes…" autocomplete="off">
     </div>
     <button class="btn ghost sm" onclick="exportData()" title="Download a JSON backup">⬇ Export</button>
-    <button class="btn ghost sm" onclick="document.getElementById('importFile').click()" title="Load a JSON backup">⬆ Import</button>
-    <input type="file" id="importFile" accept="application/json" class="hidden" onchange="importData(event)">
+    <button class="btn ghost sm" onclick="openImportModal()" title="Load / merge a JSON backup or sync file">⬆ Import</button>
   </header>
 
   <nav class="tabs" id="tabs">
@@ -795,17 +794,80 @@ function exportData(){
   const url=URL.createObjectURL(blob);const a=document.createElement('a');
   a.href=url;a.download='gov-dashboard-backup.json';a.click();URL.revokeObjectURL(url);
 }
-function importData(ev){
-  const file=ev.target.files[0];if(!file)return;
-  const r=new FileReader();
-  r.onload=()=>{try{
-    const d=JSON.parse(r.result);
-    if(!d.people||!d.interactions){alert('That does not look like a dashboard backup.');return;}
-    if(!confirm('Replace all current data with the imported file?'))return;
-    data={people:[],interactions:[],departments:[],tasks:[],mission:'',...d};
-    save();alert('Imported successfully.');
-  }catch(e){alert('Could not read file: '+e.message)}};
-  r.readAsText(file);ev.target.value='';
+function openImportModal(){
+  openModal('Import data',`
+    <p class="muted" style="font-size:.88em;margin-bottom:12px">Load contacts/interactions from a JSON backup or a sync file.
+      <strong>Merge</strong> adds new records and de-duplicates against what you already have (recommended for repeated email syncs).
+      <strong>Replace</strong> wipes current data first.</p>
+    <div class="field"><label>Choose a file</label><input type="file" id="imp_file" accept="application/json"></div>
+    <div class="field"><label>…or paste JSON</label><textarea id="imp_text" placeholder='{"people":[...],"interactions":[...],"departments":[...],"tasks":[...]}'></textarea></div>
+    <div class="form-actions">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="doImport('replace')">Replace all</button>
+      <button class="btn primary" onclick="doImport('merge')">Merge</button>
+    </div>`);
+  document.getElementById('imp_file').addEventListener('change',ev=>{
+    const f=ev.target.files[0];if(!f)return;
+    const r=new FileReader();r.onload=()=>{document.getElementById('imp_text').value=r.result;};r.readAsText(f);
+  });
+}
+function doImport(mode){
+  const txt=document.getElementById('imp_text').value.trim();
+  if(!txt){alert('Choose a file or paste JSON first.');return;}
+  let inc;try{inc=JSON.parse(txt);}catch(e){alert('Invalid JSON: '+e.message);return;}
+  inc={people:[],interactions:[],departments:[],tasks:[],mission:'',...inc};
+  if(mode==='replace'){
+    if(!confirm('Replace ALL current data? Export a backup first if unsure.'))return;
+    data={people:inc.people,interactions:inc.interactions,departments:inc.departments,tasks:inc.tasks,mission:inc.mission};
+  } else {
+    const r=mergeInto(inc);
+    closeModal();save();
+    alert(`Merge complete.\n+${r.people} contacts, +${r.interactions} interactions, +${r.departments} departments, +${r.tasks} follow-ups added.`);
+    return;
+  }
+  closeModal();save();alert('Data replaced.');
+}
+/* Merge incoming data, remapping IDs and de-duplicating. Returns counts added. */
+function mergeInto(inc){
+  const deptMap={},personMap={},added={people:0,interactions:0,departments:0,tasks:0};
+  const norm=s=>(s||'').trim().toLowerCase();
+  // Departments — match by name
+  (inc.departments||[]).forEach(d=>{
+    const ex=data.departments.find(x=>norm(x.name)===norm(d.name));
+    if(ex){deptMap[d.id]=ex.id;ex.mandate=ex.mandate||d.mandate;ex.whatWeNeed=ex.whatWeNeed||d.whatWeNeed;}
+    else{const nid=uid();deptMap[d.id]=nid;data.departments.push({...d,id:nid,feedsInto:[]});added.departments++;}
+  });
+  (inc.departments||[]).forEach(d=>{
+    const dep=deptById(deptMap[d.id]);if(!dep)return;
+    (d.feedsInto||[]).forEach(f=>{const rf=deptMap[f];if(rf&&!dep.feedsInto.includes(rf))dep.feedsInto.push(rf);});
+  });
+  // People — match by email, else by name
+  (inc.people||[]).forEach(p=>{
+    let ex=null;
+    if(p.email)ex=data.people.find(x=>x.email&&norm(x.email)===norm(p.email));
+    if(!ex)ex=data.people.find(x=>norm(x.name)===norm(p.name));
+    const did=p.departmentId?deptMap[p.departmentId]||null:null;
+    if(ex){personMap[p.id]=ex.id;
+      ['title','org','email','phone','telegram','notes'].forEach(k=>{if(!ex[k]&&p[k])ex[k]=p[k];});
+      if(!ex.departmentId&&did)ex.departmentId=did;
+      ex.tags=Array.from(new Set([...(ex.tags||[]),...(p.tags||[])]));
+    } else {const nid=uid();personMap[p.id]=nid;data.people.push({...p,id:nid,departmentId:did});added.people++;}
+  });
+  // Interactions — dedupe by person + date + summary
+  (inc.interactions||[]).forEach(i=>{
+    const pid=personMap[i.personId];if(!pid)return;
+    const dup=data.interactions.find(x=>x.personId===pid&&x.date===i.date&&norm(x.summary)===norm(i.summary));
+    if(!dup){data.interactions.push({...i,id:uid(),personId:pid});added.interactions++;}
+  });
+  // Tasks — dedupe by title + person
+  (inc.tasks||[]).forEach(t=>{
+    const pid=t.personId?personMap[t.personId]||null:null;
+    const did=t.departmentId?deptMap[t.departmentId]||null:null;
+    const dup=data.tasks.find(x=>norm(x.title)===norm(t.title)&&(x.personId||null)===pid);
+    if(!dup){data.tasks.push({...t,id:uid(),personId:pid,departmentId:did});added.tasks++;}
+  });
+  if(!data.mission&&inc.mission)data.mission=inc.mission;
+  return added;
 }
 
 function firstRunEmpty(){
